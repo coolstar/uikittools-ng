@@ -1,0 +1,14 @@
+uikittools-ng is (C) 2019, CoolStar
+
+This source code is confidential and proprietary. It may not be read, copied, or distributed without explicit permission of CoolStar.
+
+Binaries published of this code are to be distributed free of charge, but are still copyrighted and may not be mirrored or cloned without written permission from CoolStar.
+
+=========================================
+
+ldrestart:
+
+ldrestart contains code from jlaunchctl which is (C) J Levin. 
+
+jlaunchctl license: Free. Use it, by all means. And if you do find it useful, let me know.
+	Likewise if you want a feature/command 

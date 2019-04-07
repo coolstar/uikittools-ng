@@ -27,8 +27,8 @@ uiduid: uiduid.m ent.plist
 	$(CC) uiduid.m -o uiduid -framework Foundation -lMobileGestalt -fobjc-arc
 	$(LDID) -Sent.plist uiduid
 
-uiopen: uiopen.c ent.plist
-	$(CC) uiopen.c -o uiopen -framework CoreFoundation
+uiopen: uiopen.m ent.plist
+	$(CC) uiopen.m -o uiopen -framework Foundation -framework MobileCoreServices
 	$(LDID) -Suiopen.plist uiopen
 
 clean:

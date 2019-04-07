@@ -1,0 +1,31 @@
+#import <dlfcn.h>
+#import <objc/runtime.h>
+#import <Foundation/Foundation.h>
+
+typedef NS_OPTIONS(NSUInteger, SBSRelaunchActionOptions) {
+	SBSRelaunchActionOptionsNone,
+	SBSRelaunchActionOptionsRestartRenderServer = 1 << 0,
+	SBSRelaunchActionOptionsSnapshotTransition = 1 << 1,
+	SBSRelaunchActionOptionsFadeToBlackTransition = 1 << 2
+};
+
+@interface SBSRelaunchAction : NSObject
++ (instancetype)actionWithReason:(NSString *)reason options:(SBSRelaunchActionOptions)options targetURL:(NSURL *)targetURL;
+@end
+
+@interface FBSSystemService : NSObject
++ (instancetype)sharedService;
+- (void)sendActions:(NSSet *)actions withResult:(id)result;
+@end
+
+int main(){
+	@autoreleasepool {
+		dlopen("/System/Library/PrivateFrameworks/FrontBoardServices.framework/FrontBoardServices", RTLD_NOW);
+		dlopen("/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices", RTLD_NOW);
+
+		SBSRelaunchAction *restartAction = [objc_getClass("SBSRelaunchAction") actionWithReason:@"magnify mode" options:(SBSRelaunchActionOptionsRestartRenderServer | SBSRelaunchActionOptionsFadeToBlackTransition) targetURL:nil];
+		[(FBSSystemService *)[objc_getClass("FBSSystemService") sharedService] sendActions:[NSSet setWithObject:restartAction] withResult:nil];
+		sleep(2);
+	}
+	return 0;
+}

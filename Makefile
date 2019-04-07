@@ -15,8 +15,8 @@ sbdidlaunch: sbdidlaunch.c ent.plist
 	$(CC) sbdidlaunch.c -o sbdidlaunch -framework CoreFoundation
 	$(LDID) -Sent.plist sbdidlaunch
 
-sbreload: sbreload.m sbreload.plist
-	$(CC) sbreload.m -o sbreload -framework Foundation -fobjc-arc
+sbreload: sbreload.m sbreload-launchd.c sbreload.plist
+	$(CC) sbreload.m sbreload-launchd.c -o sbreload -framework Foundation -fobjc-arc -I.
 	$(LDID) -Ssbreload.plist sbreload
 
 uicache: uicache.m uicache.plist

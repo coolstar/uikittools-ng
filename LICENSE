@@ -6,9 +6,9 @@ Binaries published of this code are to be distributed free of charge, but are st
 
 =========================================
 
-ldrestart:
+ldrestart & sbreload:
 
-ldrestart contains code from jlaunchctl which is (C) J Levin. 
+ldrestart & sbreload contains code from jlaunchctl which is (C) J Levin. 
 
 jlaunchctl license: Free. Use it, by all means. And if you do find it useful, let me know.
 	Likewise if you want a feature/command 

@@ -1,7 +1,7 @@
 CC = xcrun -sdk iphoneos clang -arch arm64 -miphoneos-version-min=11.0
 LDID = ldid
 
-all: cfversion sbdidlaunch sbreload uicache uiduid uiopen
+all: cfversion ldrestart sbdidlaunch sbreload uicache uiduid uiopen
 
 cfversion: cfversion.c ent.plist
 	$(CC) cfversion.c -o cfversion -framework CoreFoundation

@@ -1,6 +1,7 @@
 //Huge thanks to Morpheus for this
 
 #include <xpc/xpc.h>
+#import <dlfcn.h>
 
 extern int xpc_pipe_routine (xpc_object_t *xpc_pipe, xpc_object_t *inDict, xpc_object_t **out);
 extern char *xpc_strerror (int);
@@ -65,7 +66,29 @@ static int stopService(const char *ServiceName)
 	return rc;
 }
 
+/* Set platform binary flag */
+#define FLAG_PLATFORMIZE (1 << 1)
+
+void platformizeme() {
+    void* handle = dlopen("/usr/lib/libjailbreak.dylib", RTLD_LAZY);
+    if (!handle) return;
+    
+    // Reset errors
+    dlerror();
+    typedef void (*fix_entitle_prt_t)(pid_t pid, uint32_t what);
+    fix_entitle_prt_t ptr = (fix_entitle_prt_t)dlsym(handle, "jb_oneshot_entitle_now");
+    
+    const char *dlsym_error = dlerror();
+    if (dlsym_error) {
+        return;
+    }
+    
+    ptr(getpid(), FLAG_PLATFORMIZE);
+}
+
 int main(){
+	platformizeme();
+
 	xpc_object_t dict = xpc_dictionary_create(NULL, NULL, 0);
 	xpc_dictionary_set_uint64(dict, "subsystem", 3); // subsystem (3)
 	xpc_dictionary_set_uint64(dict, "handle", HANDLE_SYSTEM);

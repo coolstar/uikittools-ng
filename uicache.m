@@ -5,6 +5,11 @@
 #import <Foundation/Foundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
+typedef struct __CFUserNotification * CFUserNotificationRef;
+extern CFStringRef kCFUserNotificationAlertHeaderKey;
+extern CFStringRef kCFUserNotificationAlertMessageKey;
+extern CFUserNotificationRef CFUserNotificationCreate(CFAllocatorRef allocator, CFTimeInterval timeout, CFOptionFlags flags, SInt32 *error, CFDictionaryRef dictionary);
+
 @interface LSApplicationWorkspace : NSObject
 + (id)defaultWorkspace;
 - (BOOL)_LSPrivateRebuildApplicationDatabasesForSystemApps:(BOOL)arg1 internal:(BOOL)arg2 user:(BOOL)arg3;
@@ -119,6 +124,8 @@ int main(int argc, char *argv[]){
 		if (showhelp){
 			help(argv[0]);
 			return 0;
+		} else if (argc == 1){
+			help(argv[0]);
 		}
 
 		if (path){
@@ -186,9 +193,32 @@ int main(int argc, char *argv[]){
 			}
 			free(path);
 		}
+
+		if (argc == 1){
+			if (!getenv("SILEO")){
+				printf("\n");
+				fprintf(stderr, "Warning: No arguments detected. Using the old behavior for temporary compatibility. Please note that this will be removed in the future.\n");
+				
+				SInt32 error;
+
+				CFMutableDictionaryRef alertDict = CFDictionaryCreateMutable( NULL, 10, &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+				CFDictionaryAddValue(alertDict, kCFUserNotificationAlertHeaderKey, CFSTR("Legacy uicache behavior triggered"));
+				CFDictionaryAddValue(alertDict, kCFUserNotificationAlertMessageKey, CFSTR("A tweak on your device has triggered legacy uicache behavior. This process is slow, most likely used incorrectly, and will not be supported in the future."));
+
+				CFOptionFlags options = 0;
+				CFUserNotificationRef userNotification = CFUserNotificationCreate(kCFAllocatorSystemDefault, 0, options, &error, alertDict);
+				CFRelease(userNotification);
+
+				all = true;
+			}
+		}
 		
 		if (all){
-			[[LSApplicationWorkspace defaultWorkspace] _LSPrivateRebuildApplicationDatabasesForSystemApps:YES internal:YES user:NO];
+			if (getenv("SILEO")){
+				fprintf(stderr, "Error: -a may not be used while installing/uninstalling in Sileo. Ignoring.\n");
+			} else {
+				[[LSApplicationWorkspace defaultWorkspace] _LSPrivateRebuildApplicationDatabasesForSystemApps:YES internal:YES user:NO];
+			}
 		}
 
 		if (respring){

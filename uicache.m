@@ -8,11 +8,13 @@
 @interface LSApplicationWorkspace : NSObject
 + (id)defaultWorkspace;
 - (BOOL)_LSPrivateRebuildApplicationDatabasesForSystemApps:(BOOL)arg1 internal:(BOOL)arg2 user:(BOOL)arg3;
-- (BOOL)registerApplicationDictionary:(id)arg1;
-- (BOOL)registerApplication:(id)arg1;
-- (BOOL)registerPlugin:(id)arg1;
-- (BOOL)unregisterApplication:(id)arg1;
+- (BOOL)registerApplicationDictionary:(NSDictionary *)applicationDictionary;
+- (BOOL)registerBundleWithInfo:(NSDictionary *)bundleInfo options:(NSDictionary *)options type:(unsigned long long)arg3 progress:(id)arg4 ;
+- (BOOL)registerApplication:(NSURL *)url;
+- (BOOL)registerPlugin:(NSURL *)url;
+- (BOOL)unregisterApplication:(NSURL *)url;
 - (NSArray *)installedPlugins;
+-(void)_LSPrivateSyncWithMobileInstallation;
 @end
 
 typedef NS_OPTIONS(NSUInteger, SBSRelaunchActionOptions) {
@@ -94,27 +96,52 @@ int main(int argc, char *argv[]){
 				return -1;
 			}
 
-			NSString *infoPlist = [rawPath stringByAppendingPathComponent:@"Info.plist"];
-			NSMutableDictionary *plist = [NSMutableDictionary dictionaryWithContentsOfFile:infoPlist];
+			NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[rawPath stringByAppendingPathComponent:@"Info.plist"]];
+			NSString *bundleID = [infoPlist objectForKey:@"CFBundleIdentifier"];
+
+			NSMutableDictionary *plist = [NSMutableDictionary dictionary];
 			[plist setObject:@"System" forKey:@"ApplicationType"];
+			[plist setObject:@1 forKey:@"BundleNameIsLocalized"];
+			[plist setObject:bundleID forKey:@"CFBundleIdentifier"];
+			[plist setObject:@0 forKey:@"CompatibilityState"];
+			[plist setObject:@0 forKey:@"IsDeletable"];
 			[plist setObject:rawPath forKey:@"Path"];
 
-			LSApplicationWorkspace *workspace = [LSApplicationWorkspace defaultWorkspace];
-			if (plist){
-				[workspace registerApplicationDictionary:plist];
+			NSURL *url = [NSURL fileURLWithPath:rawPath];
 
-				/*NSString *pluginsPath = [rawPath stringByAppendingPathComponent:@"PlugIns"];
+			LSApplicationWorkspace *workspace = [LSApplicationWorkspace defaultWorkspace];
+			if (bundleID){
+				NSString *pluginsPath = [rawPath stringByAppendingPathComponent:@"PlugIns"];
 				NSArray *plugins = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:pluginsPath error:nil];
+
+				NSMutableDictionary *bundlePlugins = [NSMutableDictionary dictionary];
 				for (NSString *pluginName in plugins){
 					NSString *fullPath = [pluginsPath stringByAppendingPathComponent:pluginName];
-					printf("Attempting to register plugin at: %s\n", [fullPath UTF8String]);
 
-					NSURL *pluginURL = [NSURL fileURLWithPath:fullPath];
+					NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[fullPath stringByAppendingPathComponent:@"Info.plist"]];
+					NSString *pluginBundleID = [infoPlist objectForKey:@"CFBundleIdentifier"];
+					if (!pluginBundleID)
+						continue;
 
-					[workspace registerPlugin:pluginURL];
+					NSMutableDictionary *pluginPlist = [NSMutableDictionary dictionary];
+					[pluginPlist setObject:@"PluginKitPlugin" forKey:@"ApplicationType"];
+					[pluginPlist setObject:@1 forKey:@"BundleNameIsLocalized"];
+					[pluginPlist setObject:pluginBundleID forKey:@"CFBundleIdentifier"];
+					[pluginPlist setObject:@0 forKey:@"CompatibilityState"];
+					//[pluginPlist setObject:@"/private/var/mobile/Containers/Data/PluginKitPlugin/284FA6CE-7C19-437C-AC3A-F57E593DF819" forKey:@"Container"]; //XXX: Need Container
+					[pluginPlist setObject:fullPath forKey:@"Path"];
+					[pluginPlist setObject:bundleID forKey:@"PluginOwnerBundleID"];
+					[bundlePlugins setObject:pluginPlist forKey:pluginBundleID];
+				}
+				[plist setObject:bundlePlugins forKey:@"_LSBundlePlugins"];
+
+				/*NSMutableDictionary *testPlist = [NSMutableDictionary dictionaryWithContentsOfFile:@"/electra/test.plist"];
+				if (testPlist){
+					[plist writeToFile:@"/electra/orig.plist" atomically:NO];
+					plist = testPlist;
 				}*/
+				[workspace registerApplicationDictionary:plist];
 			} else {
-				NSURL *url = [NSURL fileURLWithPath:rawPath];
 				[workspace unregisterApplication:url];
 			}
 			free(path);

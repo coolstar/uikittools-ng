@@ -24,6 +24,17 @@ typedef NS_OPTIONS(NSUInteger, SBSRelaunchActionOptions) {
 	SBSRelaunchActionOptionsFadeToBlackTransition = 1 << 2
 };
 
+@interface MCMContainer : NSObject
++ (instancetype)containerWithIdentifier:(NSString *)identifier error:(NSError **)error;
+- (NSURL *)url;
+@end
+
+@interface MCMAppDataContainer : MCMContainer
+@end
+
+@interface MCMPluginKitPluginDataContainer : MCMContainer
+@end
+
 @interface SBSRelaunchAction : NSObject
 + (instancetype)actionWithReason:(NSString *)reason options:(SBSRelaunchActionOptions)options targetURL:(NSURL *)targetURL;
 @end
@@ -89,6 +100,8 @@ int main(int argc, char *argv[]){
 		}
 
 		if (path){
+			dlopen("/System/Library/PrivateFrameworks/MobileContainerManager.framework/MobileContainerManager", RTLD_NOW);
+
 			NSString *rawPath = [NSString stringWithUTF8String:path];
 			rawPath = [rawPath stringByResolvingSymlinksInPath];
 			if (![[rawPath stringByDeletingLastPathComponent] isEqualToString:@"/Applications"]){
@@ -99,11 +112,16 @@ int main(int argc, char *argv[]){
 			NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[rawPath stringByAppendingPathComponent:@"Info.plist"]];
 			NSString *bundleID = [infoPlist objectForKey:@"CFBundleIdentifier"];
 
+			MCMContainer *appContainer = [objc_getClass("MCMAppDataContainer") containerWithIdentifier:bundleID error:nil];
+			NSString *containerPath = [appContainer url].path;
+
 			NSMutableDictionary *plist = [NSMutableDictionary dictionary];
 			[plist setObject:@"System" forKey:@"ApplicationType"];
 			[plist setObject:@1 forKey:@"BundleNameIsLocalized"];
 			[plist setObject:bundleID forKey:@"CFBundleIdentifier"];
 			[plist setObject:@0 forKey:@"CompatibilityState"];
+			if (containerPath)
+				[plist setObject:containerPath forKey:@"Container"];
 			[plist setObject:@0 forKey:@"IsDeletable"];
 			[plist setObject:rawPath forKey:@"Path"];
 
@@ -122,40 +140,39 @@ int main(int argc, char *argv[]){
 					NSString *pluginBundleID = [infoPlist objectForKey:@"CFBundleIdentifier"];
 					if (!pluginBundleID)
 						continue;
+					MCMContainer *pluginContainer = [objc_getClass("MCMPluginKitPluginDataContainer") containerWithIdentifier:pluginBundleID error:nil];
+					NSString *pluginContainerPath = [pluginContainer url].path;
 
 					NSMutableDictionary *pluginPlist = [NSMutableDictionary dictionary];
 					[pluginPlist setObject:@"PluginKitPlugin" forKey:@"ApplicationType"];
 					[pluginPlist setObject:@1 forKey:@"BundleNameIsLocalized"];
 					[pluginPlist setObject:pluginBundleID forKey:@"CFBundleIdentifier"];
 					[pluginPlist setObject:@0 forKey:@"CompatibilityState"];
-					//[pluginPlist setObject:@"/private/var/mobile/Containers/Data/PluginKitPlugin/284FA6CE-7C19-437C-AC3A-F57E593DF819" forKey:@"Container"]; //XXX: Need Container
+					[pluginPlist setObject:pluginContainerPath forKey:@"Container"];
 					[pluginPlist setObject:fullPath forKey:@"Path"];
 					[pluginPlist setObject:bundleID forKey:@"PluginOwnerBundleID"];
 					[bundlePlugins setObject:pluginPlist forKey:pluginBundleID];
 				}
 				[plist setObject:bundlePlugins forKey:@"_LSBundlePlugins"];
-
-				/*NSMutableDictionary *testPlist = [NSMutableDictionary dictionaryWithContentsOfFile:@"/electra/test.plist"];
-				if (testPlist){
-					[plist writeToFile:@"/electra/orig.plist" atomically:NO];
-					plist = testPlist;
-				}*/
-				[workspace registerApplicationDictionary:plist];
+				if (![workspace registerApplicationDictionary:plist]){
+					fprintf(stderr, "Error: Unable to register app!\n");
+				}
 			} else {
-				[workspace unregisterApplication:url];
+				if (![workspace unregisterApplication:url]){
+					fprintf(stderr, "Error: Unable to unregister app!\n");
+				}
 			}
 			free(path);
 		}
-		
-		dlopen("/System/Library/PrivateFrameworks/FrontBoardServices.framework/FrontBoardServices", RTLD_NOW);
-		dlopen("/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices", RTLD_NOW);
-
 		
 		if (all){
 			[[LSApplicationWorkspace defaultWorkspace] _LSPrivateRebuildApplicationDatabasesForSystemApps:YES internal:YES user:NO];
 		}
 
 		if (respring){
+			dlopen("/System/Library/PrivateFrameworks/FrontBoardServices.framework/FrontBoardServices", RTLD_NOW);
+			dlopen("/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices", RTLD_NOW);
+
 			SBSRelaunchAction *restartAction = [objc_getClass("SBSRelaunchAction") actionWithReason:@"respring" options:(SBSRelaunchActionOptionsRestartRenderServer | SBSRelaunchActionOptionsFadeToBlackTransition) targetURL:nil];
 			[(FBSSystemService *)[objc_getClass("FBSSystemService") sharedService] sendActions:[NSSet setWithObject:restartAction] withResult:nil];
 			sleep(2);

@@ -8,6 +8,8 @@
 		<string>InstallForLaunchServices</string>
 		<string>UninstallForLaunchServices</string>
 	</array>
+	<key>com.apple.private.MobileContainerManager.allowed</key>
+	<true/>
 	<key>com.apple.lsapplicationworkspace.rebuildappdatabases</key>
 	<true/>
 	<key>com.apple.frontboard.launchapplications</key>

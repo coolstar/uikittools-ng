@@ -61,10 +61,10 @@ void help(char *name) {
 
 int main(int argc, char *argv[]){
 	@autoreleasepool {
-		int all;
+		int all = 0;
 		char *path = NULL;
-		int respring;
-		int showhelp;
+		int respring = 0;
+		int showhelp = 0;
 
 		struct option longOptions[] = {
 			{ "all" , no_argument, 0, 'a'},
@@ -111,24 +111,24 @@ int main(int argc, char *argv[]){
 
 			NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:[rawPath stringByAppendingPathComponent:@"Info.plist"]];
 			NSString *bundleID = [infoPlist objectForKey:@"CFBundleIdentifier"];
-
-			MCMContainer *appContainer = [objc_getClass("MCMAppDataContainer") containerWithIdentifier:bundleID error:nil];
-			NSString *containerPath = [appContainer url].path;
-
-			NSMutableDictionary *plist = [NSMutableDictionary dictionary];
-			[plist setObject:@"System" forKey:@"ApplicationType"];
-			[plist setObject:@1 forKey:@"BundleNameIsLocalized"];
-			[plist setObject:bundleID forKey:@"CFBundleIdentifier"];
-			[plist setObject:@0 forKey:@"CompatibilityState"];
-			if (containerPath)
-				[plist setObject:containerPath forKey:@"Container"];
-			[plist setObject:@0 forKey:@"IsDeletable"];
-			[plist setObject:rawPath forKey:@"Path"];
-
+			
 			NSURL *url = [NSURL fileURLWithPath:rawPath];
 
 			LSApplicationWorkspace *workspace = [LSApplicationWorkspace defaultWorkspace];
 			if (bundleID){
+				MCMContainer *appContainer = [objc_getClass("MCMAppDataContainer") containerWithIdentifier:bundleID error:nil];
+				NSString *containerPath = [appContainer url].path;
+
+				NSMutableDictionary *plist = [NSMutableDictionary dictionary];
+				[plist setObject:@"System" forKey:@"ApplicationType"];
+				[plist setObject:@1 forKey:@"BundleNameIsLocalized"];
+				[plist setObject:bundleID forKey:@"CFBundleIdentifier"];
+				[plist setObject:@0 forKey:@"CompatibilityState"];
+				if (containerPath)
+					[plist setObject:containerPath forKey:@"Container"];
+				[plist setObject:@0 forKey:@"IsDeletable"];
+				[plist setObject:rawPath forKey:@"Path"];
+
 				NSString *pluginsPath = [rawPath stringByAppendingPathComponent:@"PlugIns"];
 				NSArray *plugins = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:pluginsPath error:nil];
 

@@ -25,7 +25,7 @@ typedef NS_OPTIONS(NSUInteger, SBSRelaunchActionOptions) {
 };
 
 @interface MCMContainer : NSObject
-+ (instancetype)containerWithIdentifier:(NSString *)identifier error:(NSError **)error;
++ (instancetype)containerWithIdentifier:(NSString *)identifier createIfNecessary:(BOOL)createIfNecessary existed:(BOOL *)existed error:(NSError **)error;
 - (NSURL *)url;
 @end
 
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]){
 
 			LSApplicationWorkspace *workspace = [LSApplicationWorkspace defaultWorkspace];
 			if (bundleID){
-				MCMContainer *appContainer = [objc_getClass("MCMAppDataContainer") containerWithIdentifier:bundleID error:nil];
+				MCMContainer *appContainer = [objc_getClass("MCMAppDataContainer") containerWithIdentifier:bundleID createIfNecessary:YES existed:nil error:nil];
 				NSString *containerPath = [appContainer url].path;
 
 				NSMutableDictionary *plist = [NSMutableDictionary dictionary];
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]){
 					NSString *pluginBundleID = [infoPlist objectForKey:@"CFBundleIdentifier"];
 					if (!pluginBundleID)
 						continue;
-					MCMContainer *pluginContainer = [objc_getClass("MCMPluginKitPluginDataContainer") containerWithIdentifier:pluginBundleID error:nil];
+					MCMContainer *pluginContainer = [objc_getClass("MCMPluginKitPluginDataContainer") containerWithIdentifier:pluginBundleID createIfNecessary:YES existed:nil error:nil];
 					NSString *pluginContainerPath = [pluginContainer url].path;
 
 					NSMutableDictionary *pluginPlist = [NSMutableDictionary dictionary];

@@ -9,6 +9,7 @@ typedef struct __CFUserNotification * CFUserNotificationRef;
 extern CFStringRef kCFUserNotificationAlertHeaderKey;
 extern CFStringRef kCFUserNotificationAlertMessageKey;
 extern CFUserNotificationRef CFUserNotificationCreate(CFAllocatorRef allocator, CFTimeInterval timeout, CFOptionFlags flags, SInt32 *error, CFDictionaryRef dictionary);
+extern SInt32 CFUserNotificationReceiveResponse(CFUserNotificationRef userNotification, CFTimeInterval timeout, CFOptionFlags *responseFlags);
 
 @interface LSApplicationWorkspace : NSObject
 + (id)defaultWorkspace;
@@ -49,6 +50,9 @@ typedef NS_OPTIONS(NSUInteger, SBSRelaunchActionOptions) {
 - (void)sendActions:(NSSet *)actions withResult:(id)result;
 @end
 
+#define	CS_OPS_CDHASH		5	/* get code directory hash */
+int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
+
 /* Set platform binary flag */
 #define FLAG_PLATFORMIZE (1 << 1)
 
@@ -72,6 +76,7 @@ void platformizeme() {
 void help(char *name) {
 	printf(
 		"Usage: %s [OPTION...]\n"
+		"Copyright (C) 2019, Electra Team. All Rights Reserved.\n\n"
 		"Update iOS registered applications and optionally restart SpringBoard\n\n"
 
 		"  --all           Update all system and internal applications\n"
@@ -92,6 +97,7 @@ int main(int argc, char *argv[]){
 		char *path = NULL;
 		int respring = 0;
 		int showhelp = 0;
+		bool isLegacyInstaller = false;
 
 		struct option longOptions[] = {
 			{ "all" , no_argument, 0, 'a'},
@@ -121,10 +127,25 @@ int main(int argc, char *argv[]){
 			}
 		}
 
+		uint8_t cdhash[20];
+		bzero(cdhash, 20);
+		int status = csops(getppid(), CS_OPS_CDHASH, cdhash, 20);
+
+		if (status == 0){
+			isLegacyInstaller = true;
+
+			uint8_t ref_cdhash[20] = {0xc3, 0x75, 0xa8, 0xbb, 0x24, 0x22, 0x8e, 0x14, 0xa0, 0x01, 0x77, 0xa0, 0x3f, 0xaf, 0xc8, 0x7e, 0x5f, 0x50, 0xd5, 0x59};
+			for (int i = 0; i < 20; i++){
+				if (cdhash[i] != ref_cdhash[i]){
+					isLegacyInstaller = false;
+				}
+			}
+		}
+
 		if (showhelp){
 			help(argv[0]);
 			return 0;
-		} else if (argc == 1){
+		} else if (argc == 1 && !isLegacyInstaller){
 			help(argv[0]);
 		}
 
@@ -195,10 +216,12 @@ int main(int argc, char *argv[]){
 		}
 
 		if (argc == 1){
-			if (!getenv("SILEO")){
+			if (isLegacyInstaller){
+				all = true;
+			} else if (!(getenv("SILEO") || isatty(STDOUT_FILENO) || isatty(STDIN_FILENO) || isatty(STDERR_FILENO))){
 				printf("\n");
 				fprintf(stderr, "Warning: No arguments detected. Using the old behavior for temporary compatibility. Please note that this will be removed in the future.\n");
-				
+
 				SInt32 error;
 
 				CFMutableDictionaryRef alertDict = CFDictionaryCreateMutable( NULL, 10, &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -207,6 +230,10 @@ int main(int argc, char *argv[]){
 
 				CFOptionFlags options = 0;
 				CFUserNotificationRef userNotification = CFUserNotificationCreate(kCFAllocatorSystemDefault, 0, options, &error, alertDict);
+
+				CFOptionFlags response = 0;
+
+				CFUserNotificationReceiveResponse(userNotification, 0, &response);
 				CFRelease(userNotification);
 
 				all = true;

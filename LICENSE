@@ -17,3 +17,7 @@ ldrestart & sbreload contains code from jlaunchctl which is (C) J Levin.
 
 jlaunchctl license: Free. Use it, by all means. And if you do find it useful, let me know.
 	Likewise if you want a feature/command 
+
+=========================================
+
+NOTE: THIS LICENSE IS NOT COMPATIBLE WITH GPL AND CODE FROM THIS REPO MAY NOT BE MIXED WITH GPL LICENSED CODE

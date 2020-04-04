@@ -2,7 +2,7 @@
 
 #include <xpc/xpc.h>
 
-extern int xpc_pipe_routine (xpc_object_t *xpc_pipe, xpc_object_t *inDict, xpc_object_t **out);
+extern int xpc_pipe_routine (xpc_object_t xpc_pipe, xpc_object_t inDict, xpc_object_t *out);
 extern char *xpc_strerror (int);
 
 #define HANDLE_SYSTEM 0

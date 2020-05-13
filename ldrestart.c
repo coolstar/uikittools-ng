@@ -121,7 +121,7 @@ int main(){
 
 			xpc_dictionary_apply(svcs, ^bool (const char *label, xpc_object_t svc) 
 			{
-				if (strcmp(label, "jailbreakd") == 0 || strcmp(label, "com.apple.MobileFileIntegrity") == 0)
+				if (strcmp(label, "jailbreakd") == 0 || strcmp(label, "com.apple.MobileFileIntegrity") == 0 || strcmp(label, "amfidebilitate") == 0)
 					return 1;
 
 				int64_t pid = xpc_dictionary_get_int64(svc, "pid");
